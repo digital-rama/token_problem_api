@@ -33,7 +33,7 @@ def delete_token_five_min(db: Session):
     for nat in not_alive_tokens:
         creation_time = nat.created_at.replace(microsecond=0)
         current_time = datetime.datetime.now().replace(microsecond=0)
-        if current_time > (creation_time + datetime.timedelta(minutes=2)):
+        if current_time > (creation_time + datetime.timedelta(minutes=5)):
             db.delete(nat)
             db.commit()
         else:
