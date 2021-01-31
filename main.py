@@ -57,6 +57,11 @@ def release_token_in_sixty_sec(db: Session):
 # API Routes
 
 
+@app.get("/")
+def home():
+    return {"app_details": "This is a Python Token Problem API build with FastAPI"}
+
+
 @ app.get("/get_all_totens")
 def get_all_totens(db: Session = Depends(get_db)):
     """
