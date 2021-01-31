@@ -43,22 +43,21 @@ Please deploy the same on Heroku and also share the postman collection of all th
 
 ## Deployed Heroku Link
 
-<https://google.com>
+<https://tokenproblemapplication.herokuapp.com/>
 
 
 ## API Routes - 
 
-
 #### Inbuilt Swagger Docs with API Route -
 
 - Localhost <http://http://127.0.0.1:8000/docs>
-
+- <https://tokenproblemapplication.herokuapp.com/docs>
 
 
 #### Inbuilt Redoc Docs with API Route - 
 
 - Localhost <http://http://127.0.0.1:8000/redoc>
-- 
+- <https://tokenproblemapplication.herokuapp.com/redoc>
 
 
 
