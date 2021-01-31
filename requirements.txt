@@ -7,3 +7,4 @@ starlette==0.13.6
 uvicorn==0.13.3
 uvloop
 httptools
+gunicorn
