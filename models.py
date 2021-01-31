@@ -14,7 +14,4 @@ class Token(Base):
                         default=datetime.datetime.now())
     token_name = Column(String, unique=True, index=True)
     is_assigned = Column(Boolean, default=False)
-    assigned_at = Column(DateTime(timezone=True))
-    unassigned_at = Column(DateTime(timezone=True))
-    is_alive = Column(Boolean, default=False)
-    alive_at = Column(DateTime(timezone=True))
+    assign_at = Column(DateTime(timezone=True))

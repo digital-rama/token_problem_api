@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException
+from sqlalchemy.sql.elements import Null
 from sqlalchemy.sql.functions import func
 from models import Token
 from pydantic import BaseModel
@@ -28,11 +29,11 @@ def get_db():
 
 
 def delete_token_five_min(db: Session):
-    not_alive_tokens = db.query(Token).filter(Token.is_alive == False).all()
+    not_alive_tokens = db.query(Token).filter(Token.is_assigned == False).all()
     for nat in not_alive_tokens:
         creation_time = nat.created_at.replace(microsecond=0)
         current_time = datetime.datetime.now().replace(microsecond=0)
-        if current_time > creation_time + datetime.timedelta(minutes=5):
+        if current_time > (creation_time + datetime.timedelta(minutes=2)):
             db.delete(nat)
             db.commit()
         else:
@@ -42,17 +43,17 @@ def delete_token_five_min(db: Session):
 
 
 def release_token_in_sixty_sec(db: Session):
-    alive_tokens = db.query(Token).filter(Token.is_alive == True).all()
+    alive_tokens = db.query(Token).filter(Token.is_assigned == True).all()
     for at in alive_tokens:
-        alive_at = at.alive_at.replace(microsecond=0)
+        assign_at = at.assign_at.replace(microsecond=0)
         current_time = datetime.datetime.now().replace(microsecond=0)
-        if current_time > alive_at + datetime.timedelta(minutes=1):
-            at.is_alive = False
-            at.alive_at = datetime.datetime.now()
+        if current_time > (assign_at + datetime.timedelta(minutes=1)):
+            at.is_assigned = False
+            at.assign_at = datetime.datetime.now()
             db.add(at)
             db.commit()
-    else:
-        pass
+        else:
+            pass
 
 # API Routes
 
@@ -67,8 +68,6 @@ def get_all_totens(db: Session = Depends(get_db)):
     """
     This Api Route will Return all Available Routes
     """
-    release_token_in_sixty_sec(db)
-    delete_token_five_min(db)
     tokens = db.query(Token).all()
     return tokens
 
@@ -78,8 +77,6 @@ def generate_token(db: Session = Depends(get_db)):
     """
     This Api Route will Generate a Random Token on Every Request
     """
-    release_token_in_sixty_sec(db)
-    delete_token_five_min(db)
     token = uuid.uuid4()
     token_obj = Token(token_name=str(token), is_assigned=False)
     db.add(token_obj)
@@ -101,7 +98,7 @@ def assign_token(db: Session = Depends(get_db)):
     if db.query(Token).filter(Token.is_assigned == False).count() > 0:
         token = db.query(Token).filter(Token.is_assigned == False).first()
         token.is_assigned = True
-        token.assigned_at = datetime.datetime.now()
+        token.assign_at = datetime.datetime.now()
         db.add(token)
         db.commit()
         last_obj = db.query(Token).get(token.id)
@@ -124,7 +121,6 @@ def unassign_token(db: Session = Depends(get_db)):
     if db.query(Token).filter(Token.is_assigned == True).count() > 0:
         token = db.query(Token).filter(Token.is_assigned == True).first()
         token.is_assigned = False
-        token.unassigned_at = datetime.datetime.now()
         db.add(token)
         db.commit()
         last_obj = db.query(Token).get(token.id)
@@ -165,24 +161,20 @@ def keep_alive(token_id: int, db: Session = Depends(get_db)):
     """
     release_token_in_sixty_sec(db)
     delete_token_five_min(db)
-    token_not_alive_count = db.query(Token).filter(Token.is_alive == False).filter(
-        Token.id == int(token_id)).count()
+    token_not_alive = db.query(Token).filter(
+        Token.is_assigned == False).all()
+    token_obj = db.query(Token).get(int(token_id))
+    if token_obj:
+        token_obj.is_assigned = True
+        token_obj.assign_at = datetime.datetime.now()
+        db.add(token_obj)
+        db.commit()
+        token_alive_obj = db.query(Token).get(token_id)
+        return {
+            "message": f'keep alive request set for token id {token_id}',
+            "alive_token": token_alive_obj
+        }
 
-    if token_not_alive_count > 0:
-        token_obj = db.query(Token).get(int(token_id))
-        if token_obj.is_alive == False:
-            token_obj.is_alive = True
-            token_obj.alive_at = datetime.datetime.now()
-            db.add(token_obj)
-            db.commit()
-            token_alive_obj = db.query(Token).get(token_id)
-            return {
-                "message": f'token id {token_id} is alive',
-                "alive_token": token_alive_obj
-            }
-        else:
-            return HTTPException(
-                status_code=404, detail=f'requested token with the id {token_id} is already alive')
     else:
-        return HTTPException(
+        raise HTTPException(
             status_code=404, detail=f'requested token with the id {token_id} is not available, please check and try again')
