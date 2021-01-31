@@ -63,20 +63,13 @@ def home():
     return {"app_details": "This is a Python Token Problem API build with FastAPI"}
 
 
-@ app.get("/get_all_totens")
-def get_all_totens(db: Session = Depends(get_db)):
-    """
-    This Api Route will Return all Available Routes
-    """
-    tokens = db.query(Token).all()
-    return tokens
-
-
 @ app.post("/generate_token")
 def generate_token(db: Session = Depends(get_db)):
     """
     This Api Route will Generate a Random Token on Every Request
     """
+    release_token_in_sixty_sec(db)
+    delete_token_five_min(db)
     token = uuid.uuid4()
     token_obj = Token(token_name=str(token), is_assigned=False)
     db.add(token_obj)
